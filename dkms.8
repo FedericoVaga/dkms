@@ -901,6 +901,12 @@ of your source.  If the script exits with a non\-zero value, the
 install will be aborted.  This is typically used to perform a custom
 version comparison.
 .TP
+.B MODULES_SYMVERS[#]=
+If this directive is set to
+.B yes
+then the "Module.symvers" file is stored next to its correspondent ".ko" in
+.B BUILT_MODULE_LOCATION[#]
+.TP
 .SH DKMS.CONF VARIABLES
 Within your
 .I dkms.conf

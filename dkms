@@ -33,7 +33,8 @@ readonly dkms_conf_variables="CLEAN REMAKE_INITRD remake_initrd PACKAGE_NAME
    DEST_MODULE_LOCATION dest_module_location
    modules_conf_obsoletes MODULES_CONF_ALIAS_TYPE
    modules_conf_alias_type STRIP strip MODULES_CONF_OBSOLETE_ONLY
-   modules_conf_obsolete_only AUTOINSTALL NO_WEAK_MODULES"
+   modules_conf_obsolete_only AUTOINSTALL NO_WEAK_MODULES
+   MODULES_SYMVERS modules_symvers"
 
 # Some important regular expressions.  Requires bash 3 or above.
 # Any poor souls still running bash 2 or older really need an upgrade.
@@ -593,7 +594,8 @@ read_conf()
     for s in ${#BUILT_MODULE_NAME[@]} \
         ${#BUILT_MODULE_LOCATION[@]} \
         ${#DEST_MODULE_NAME[@]} \
-        ${#DEST_MODULE_LOCATION[@]}; do
+        ${#DEST_MODULE_LOCATION[@]} \
+        ${#MODULES_SYMVERS[@]}; do
         ((s > array_size)) && array_size=$s
     done
     for ((index=0; index < array_size; index++)); do
@@ -604,6 +606,7 @@ read_conf()
         dest_module_location[$index]=${DEST_MODULE_LOCATION[$index]}
         modules_conf_obsoletes[$index]=${MODULES_CONF_OBSOLETES[$index]}
         modules_conf_alias_type[$index]=${MODULES_CONF_ALIAS_TYPE[$index]}
+        modules_symvers[$index]=${MODULES_SYMVERS[$index]}
         case ${MODULES_CONF_OBSOLETE_ONLY[$index]} in
             [yY]*)
                 modules_conf_obsolete_only[$index]="yes"
@@ -630,6 +633,8 @@ read_conf()
         [[ ${built_module_location[$index]} && \
             ${built_module_location[$index]:(-1)} != / ]] && \
             built_module_location[$index]="${built_module_location[$index]}/"
+        [[ ! ${modules_symvers[$index]} ]] && \
+            modules_symvers[$index]="no"
 
         # FAIL if no built_module_name
         if [[ ! ${built_module_name[$index]} ]]; then
@@ -1348,7 +1353,12 @@ do_build()
         xz -f "$dkms_tree/$module/$module_version/build/${built_module_location[$count]}${built_module_name[$count]}$module_uncompressed_suffix"
     fi
     cp -f "$dkms_tree/$module/$module_version/build/${built_module_location[$count]}${built_module_name[$count]}$module_suffix" \
-        "$base_dir/module/${dest_module_name[$count]}$module_suffix" >/dev/null
+       "$base_dir/module/${dest_module_name[$count]}$module_suffix" >/dev/null
+    # Save also the Module.symver file if the user asks for it
+    if [ "${modules_symvers[$count]}" = "yes" ]; then
+        cp -f "$dkms_tree/$module/$module_version/build/${built_module_location[$count]}Module.symvers" \
+           "$base_dir/module/Module.symvers" >/dev/null
+    fi
     done
 
     # Run the post_build script
